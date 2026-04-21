@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: my-java-springboot
-          image: java-springboot-image:latest
+          image: image-registry.openshift-image-registry.svc:5000/gennaro-syskoplan-dev/hello-world:latest
           ports:
             - name: http
               containerPort: 8081

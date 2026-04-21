@@ -15,6 +15,13 @@ public class DemoApplication {
         return "Hello World da Gennaro!";
     }
 
+    @GetMapping("/test")
+    String test() {
+        LocalDate oggi = LocalDate.now();
+        String dataFormattata = oggi.format(DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+        return "Data di oggi: " + dataFormattata;
+    }
+
     public static void main(String[] args) {
         SpringApplication.run(DemoApplication.class, args);
     }
