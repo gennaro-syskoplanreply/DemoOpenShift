@@ -1,6 +1,5 @@
 package com.example.demo.odata;
 
-import com.example.demo.repository.UserRepository;
 import org.apache.olingo.server.api.OData;
 import org.apache.olingo.server.api.ODataHttpHandler;
 import org.apache.olingo.server.api.ServiceMetadata;
@@ -16,10 +15,10 @@ import java.util.ArrayList;
 @Configuration
 public class ODataConfig {
 
-    private final UserRepository userRepository;
+    private final ODataEntityRegistry registry;
 
-    public ODataConfig(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public ODataConfig(ODataEntityRegistry registry) {
+        this.registry = registry;
     }
 
     @Bean
@@ -28,10 +27,10 @@ public class ODataConfig {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) {
                 OData odata = OData.newInstance();
-                ServiceMetadata metadata = odata.createServiceMetadata(new UserEdmProvider(), new ArrayList<>());
+                ServiceMetadata metadata = odata.createServiceMetadata(new GenericEdmProvider(registry), new ArrayList<>());
                 ODataHttpHandler handler = odata.createHandler(metadata);
-                handler.register(new UserEntityCollectionProcessor(userRepository));
-                handler.register(new UserEntityProcessor(userRepository));
+                handler.register(new GenericEntityCollectionProcessor(registry));
+                handler.register(new GenericEntityProcessor(registry));
                 handler.process(req, resp);
             }
         };

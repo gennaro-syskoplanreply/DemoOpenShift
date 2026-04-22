@@ -1,6 +1,5 @@
 package com.example.demo.odata;
 
-import com.example.demo.model.User;
 import org.apache.olingo.commons.api.edm.EdmEnumType;
 import org.apache.olingo.commons.api.edm.EdmType;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
@@ -11,26 +10,21 @@ import org.apache.olingo.server.api.uri.queryoption.expression.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.function.Function;
 
-public class UserExpressionVisitor implements ExpressionVisitor<Object> {
+public class GenericExpressionVisitor implements ExpressionVisitor<Object> {
 
-    private User currentUser;
+    private Function<String, Object> propertyAccessor;
 
-    public void setCurrentUser(User user) {
-        this.currentUser = user;
+    public void setPropertyAccessor(Function<String, Object> accessor) {
+        this.propertyAccessor = accessor;
     }
 
     @Override
     public Object visitMember(Member member) throws ExpressionVisitException, ODataApplicationException {
         String propertyName = ((UriResourcePrimitiveProperty) member.getResourcePath()
                 .getUriResourceParts().get(0)).getProperty().getName();
-        switch (propertyName) {
-            case "id":      return currentUser.getId() != null ? currentUser.getId().toString() : null;
-            case "name":    return currentUser.getName();
-            case "surname": return currentUser.getSurname();
-            case "role":    return currentUser.getRole() != null ? currentUser.getRole().name() : null;
-            default:        return null;
-        }
+        return propertyAccessor.apply(propertyName);
     }
 
     @Override
@@ -64,36 +58,36 @@ public class UserExpressionVisitor implements ExpressionVisitor<Object> {
 
     @Override
     public Object visitUnaryOperator(UnaryOperatorKind operator, Object operand) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Unary operators not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitMethodCall(MethodKind methodCall, List<Object> parameters) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Method calls not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitLambdaExpression(String lambdaFunction, String lambdaVariable, Expression expression) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Lambda expressions not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitAlias(String aliasName) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Aliases not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitTypeLiteral(EdmType type) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Type literals not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitLambdaReference(String variableName) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Lambda references not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
     public Object visitEnum(EdmEnumType type, List<String> enumValues) throws ExpressionVisitException, ODataApplicationException {
-        throw new ODataApplicationException("Enums not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
+        throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 }

@@ -1,7 +1,5 @@
 package com.example.demo.odata;
 
-import com.example.demo.model.User;
-import com.example.demo.repository.UserRepository;
 import org.apache.olingo.commons.api.data.ContextURL;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
@@ -12,21 +10,19 @@ import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.*;
 import org.apache.olingo.server.api.processor.EntityProcessor;
 import org.apache.olingo.server.api.serializer.EntitySerializerOptions;
-import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.*;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 
-public class UserEntityProcessor implements EntityProcessor {
+public class GenericEntityProcessor implements EntityProcessor {
 
     private OData odata;
     private ServiceMetadata serviceMetadata;
-    private final UserRepository userRepository;
+    private final ODataEntityRegistry registry;
 
-    public UserEntityProcessor(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public GenericEntityProcessor(ODataEntityRegistry registry) {
+        this.registry = registry;
     }
 
     @Override
@@ -44,42 +40,43 @@ public class UserEntityProcessor implements EntityProcessor {
         EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
         EdmEntityType edmEntityType = edmEntitySet.getEntityType();
 
+        ODataEntityDescriptor<?> descriptor = registry.findByEntitySetName(edmEntitySet.getName())
+                .orElseThrow(() -> new ODataApplicationException("Entity set not found",
+                        HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ROOT));
+
         List<UriParameter> keyParams = uriResourceEntitySet.getKeyPredicates();
-        UUID id = UUID.fromString(keyParams.get(0).getText().replace("'", ""));
+        String id = keyParams.get(0).getText().replace("'", "");
 
-        User user = userRepository.findById(id).orElseThrow(() ->
-                new ODataApplicationException("User not found", HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ROOT));
-
-        Entity entity = UserEntityCollectionProcessor.toEntity(user);
+        Entity entity = findEntityById(descriptor, id);
 
         ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).suffix(ContextURL.Suffix.ENTITY).build();
         EntitySerializerOptions opts = EntitySerializerOptions.with().contextURL(contextUrl).build();
 
-        SerializerResult result = odata.createSerializer(responseFormat)
-                .entity(serviceMetadata, edmEntityType, entity, opts);
-
-        response.setContent(result.getContent());
+        response.setContent(odata.createSerializer(responseFormat)
+                .entity(serviceMetadata, edmEntityType, entity, opts).getContent());
         response.setStatusCode(HttpStatusCode.OK.getStatusCode());
         response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
     }
 
+    private <T> Entity findEntityById(ODataEntityDescriptor<T> descriptor, String id) throws ODataApplicationException {
+        return descriptor.findById(id)
+                .map(entity -> descriptor.toODataEntity(entity))
+                .orElseThrow(() -> new ODataApplicationException("Entity not found",
+                        HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ROOT));
+    }
+
     @Override
-    public void createEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo,
-                             ContentType requestFormat, ContentType responseFormat)
-            throws ODataApplicationException, ODataLibraryException {
+    public void createEntity(ODataRequest req, ODataResponse res, UriInfo info, ContentType reqF, ContentType resF) throws ODataApplicationException {
         throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
-    public void updateEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo,
-                             ContentType requestFormat, ContentType responseFormat)
-            throws ODataApplicationException, ODataLibraryException {
+    public void updateEntity(ODataRequest req, ODataResponse res, UriInfo info, ContentType reqF, ContentType resF) throws ODataApplicationException {
         throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 
     @Override
-    public void deleteEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo)
-            throws ODataApplicationException, ODataLibraryException {
+    public void deleteEntity(ODataRequest req, ODataResponse res, UriInfo info) throws ODataApplicationException {
         throw new ODataApplicationException("Not supported", HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ROOT);
     }
 }

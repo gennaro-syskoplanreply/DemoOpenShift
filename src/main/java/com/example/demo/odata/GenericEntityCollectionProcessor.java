@@ -1,8 +1,8 @@
 package com.example.demo.odata;
 
-import com.example.demo.model.User;
-import com.example.demo.repository.UserRepository;
-import org.apache.olingo.commons.api.data.*;
+import org.apache.olingo.commons.api.data.ContextURL;
+import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.EntityCollection;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
 import org.apache.olingo.commons.api.format.ContentType;
@@ -15,17 +15,19 @@ import org.apache.olingo.server.api.uri.*;
 import org.apache.olingo.server.api.uri.queryoption.*;
 import org.apache.olingo.server.api.uri.queryoption.expression.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
-public class UserEntityCollectionProcessor implements EntityCollectionProcessor {
+public class GenericEntityCollectionProcessor implements EntityCollectionProcessor {
 
     private OData odata;
     private ServiceMetadata serviceMetadata;
-    private final UserRepository userRepository;
+    private final ODataEntityRegistry registry;
 
-    public UserEntityCollectionProcessor(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    public GenericEntityCollectionProcessor(ODataEntityRegistry registry) {
+        this.registry = registry;
     }
 
     @Override
@@ -42,16 +44,39 @@ public class UserEntityCollectionProcessor implements EntityCollectionProcessor 
         EdmEntitySet edmEntitySet = ((UriResourceEntitySet) uriInfo.getUriResourceParts().get(0)).getEntitySet();
         EdmEntityType edmEntityType = edmEntitySet.getEntityType();
 
-        List<User> users = userRepository.findAll();
+        ODataEntityDescriptor<?> descriptor = registry.findByEntitySetName(edmEntitySet.getName())
+                .orElseThrow(() -> new ODataApplicationException("Entity set not found",
+                        HttpStatusCode.NOT_FOUND.getStatusCode(), Locale.ROOT));
+
+        EntityCollection collection = buildEntityCollection(descriptor, uriInfo);
+
+        SelectOption selectOption = uriInfo.getSelectOption();
+        ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet)
+                .selectList(odata.createUriHelper().buildContextURLSelectList(edmEntityType, null, selectOption))
+                .build();
+
+        SerializerResult result = odata.createSerializer(responseFormat)
+                .entityCollection(serviceMetadata, edmEntityType, collection,
+                        EntityCollectionSerializerOptions.with().contextURL(contextUrl).select(selectOption).build());
+
+        response.setContent(result.getContent());
+        response.setStatusCode(HttpStatusCode.OK.getStatusCode());
+        response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
+    }
+
+    private <T> EntityCollection buildEntityCollection(ODataEntityDescriptor<T> descriptor, UriInfo uriInfo)
+            throws ODataApplicationException {
+
+        List<T> entities = new ArrayList<>(descriptor.findAll());
+        GenericExpressionVisitor visitor = new GenericExpressionVisitor();
 
         // $filter
         FilterOption filterOption = uriInfo.getFilterOption();
         if (filterOption != null) {
             Expression expression = filterOption.getExpression();
-            UserExpressionVisitor visitor = new UserExpressionVisitor();
-            users = users.stream().filter(user -> {
+            entities = entities.stream().filter(entity -> {
+                visitor.setPropertyAccessor(name -> descriptor.getPropertyValue(entity, name));
                 try {
-                    visitor.setCurrentUser(user);
                     return Boolean.TRUE.equals(expression.accept(visitor));
                 } catch (ExpressionVisitException | ODataApplicationException e) {
                     return false;
@@ -62,15 +87,14 @@ public class UserEntityCollectionProcessor implements EntityCollectionProcessor 
         // $orderby
         OrderByOption orderByOption = uriInfo.getOrderByOption();
         if (orderByOption != null) {
-            UserExpressionVisitor visitor = new UserExpressionVisitor();
             for (int i = orderByOption.getOrders().size() - 1; i >= 0; i--) {
                 OrderByItem item = orderByOption.getOrders().get(i);
                 boolean desc = item.isDescending();
-                users.sort((u1, u2) -> {
+                entities.sort((a, b) -> {
                     try {
-                        visitor.setCurrentUser(u1);
+                        visitor.setPropertyAccessor(name -> descriptor.getPropertyValue(a, name));
                         Object val1 = item.getExpression().accept(visitor);
-                        visitor.setCurrentUser(u2);
+                        visitor.setPropertyAccessor(name -> descriptor.getPropertyValue(b, name));
                         Object val2 = item.getExpression().accept(visitor);
                         if (val1 instanceof Comparable && val2 instanceof Comparable) {
                             @SuppressWarnings("unchecked")
@@ -89,48 +113,21 @@ public class UserEntityCollectionProcessor implements EntityCollectionProcessor 
         SkipOption skipOption = uriInfo.getSkipOption();
         if (skipOption != null) {
             int skip = skipOption.getValue();
-            users = users.subList(Math.min(skip, users.size()), users.size());
+            entities = entities.subList(Math.min(skip, entities.size()), entities.size());
         }
 
         // $top
         TopOption topOption = uriInfo.getTopOption();
         if (topOption != null) {
             int top = topOption.getValue();
-            users = users.subList(0, Math.min(top, users.size()));
+            entities = entities.subList(0, Math.min(top, entities.size()));
         }
 
-        // Build entity collection
-        EntityCollection entityCollection = new EntityCollection();
-        for (User user : users) {
-            entityCollection.getEntities().add(toEntity(user));
+        EntityCollection collection = new EntityCollection();
+        for (T entity : entities) {
+            Entity odataEntity = descriptor.toODataEntity(entity);
+            collection.getEntities().add(odataEntity);
         }
-
-        // Serialize
-        SelectOption selectOption = uriInfo.getSelectOption();
-        ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet)
-                .selectList(odata.createUriHelper().buildContextURLSelectList(edmEntityType, null, selectOption))
-                .build();
-
-        EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with()
-                .contextURL(contextUrl)
-                .select(selectOption)
-                .build();
-
-        SerializerResult result = odata.createSerializer(responseFormat)
-                .entityCollection(serviceMetadata, edmEntityType, entityCollection, opts);
-
-        response.setContent(result.getContent());
-        response.setStatusCode(HttpStatusCode.OK.getStatusCode());
-        response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
-    }
-
-    public static Entity toEntity(User user) {
-        Entity entity = new Entity();
-        entity.addProperty(new Property(null, "id", ValueType.PRIMITIVE, user.getId()));
-        entity.addProperty(new Property(null, "name", ValueType.PRIMITIVE, user.getName()));
-        entity.addProperty(new Property(null, "surname", ValueType.PRIMITIVE, user.getSurname()));
-        entity.addProperty(new Property(null, "role", ValueType.PRIMITIVE,
-                user.getRole() != null ? user.getRole().name() : null));
-        return entity;
+        return collection;
     }
 }

@@ -49,7 +49,7 @@ class ODataUsersTest {
         ResponseEntity<String> response = restTemplate.getForEntity("/odata/$metadata", String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getHeaders().getContentType().toString()).contains("application/xml");
+        assertThat(response.getHeaders().getContentType().toString()).contains("application/json");
         assertThat(response.getBody()).contains("User");
         assertThat(response.getBody()).contains("name");
         assertThat(response.getBody()).contains("surname");
