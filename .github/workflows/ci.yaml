@@ -46,6 +46,10 @@ jobs:
           insecure_skip_tls_verify: true
           namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
 
+      - name: Apply manifests
+        run: |
+          oc apply -f deploy.yaml -n ${{ secrets.OPENSHIFT_NAMESPACE }}
+
       - name: Trigger rollout
         run: |
           oc rollout restart deployment/my-java-springboot -n ${{ secrets.OPENSHIFT_NAMESPACE }}
