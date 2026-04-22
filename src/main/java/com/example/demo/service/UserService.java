@@ -6,6 +6,7 @@ import com.example.demo.repository.UserRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -28,8 +29,20 @@ public class UserService {
         return userRepository.findAll();
     }
 
-    public User getById(Long id) {
+    public User getById(UUID id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+    }
+
+    public User update(UUID id, UserRequest request) {
+        User user = getById(id);
+        user.setName(request.getName());
+        user.setSurname(request.getSurname());
+        user.setRole(request.getRole());
+        return userRepository.save(user);
+    }
+
+    public void delete(UUID id) {
+        userRepository.delete(getById(id));
     }
 }
