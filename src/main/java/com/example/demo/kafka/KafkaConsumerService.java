@@ -20,7 +20,7 @@ public class KafkaConsumerService {
         groupId = "${KAFKA_GROUP_ID}"
     )
     public void listen(String message) {
-        System.out.println("📨 Messaggio ricevuto da Kafka: " + message);
+        System.out.println("Messaggio ricevuto da Kafka: " + message);
         // Aggiungi qui la logica di business da eseguire alla ricezione
     }
 }
