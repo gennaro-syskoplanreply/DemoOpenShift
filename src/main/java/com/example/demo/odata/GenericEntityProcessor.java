@@ -15,6 +15,25 @@ import org.apache.olingo.server.api.uri.*;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * GenericEntityProcessor — Gestore delle operazioni OData su singole entità
+ *
+ * Questa classe implementa l'interfaccia {@link EntityProcessor} di Apache Olingo
+ * e gestisce le richieste OData che operano su una singola entità identificata
+ * dalla sua chiave primaria.
+ *
+ * Esempio di richieste gestite:
+ *   GET /odata/Users(1)      → legge l'utente con ID 1
+ *   GET /odata/Products('X') → legge il prodotto con ID "X"
+ *
+ * Il processor è "generico" perché non è legato a nessuna entità specifica:
+ * usa ODataEntityRegistry per trovare il descrittore corretto a runtime
+ * in base al nome dell'EntitySet richiesto.
+ *
+ * @see ODataEntityRegistry
+ * @see ODataEntityDescriptor
+ * @see EntityProcessor
+ */
 public class GenericEntityProcessor implements EntityProcessor {
 
     private OData odata;

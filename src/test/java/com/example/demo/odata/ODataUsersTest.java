@@ -1,5 +1,6 @@
 package com.example.demo.odata;
 
+import com.example.demo.kafka.KafkaProducerService;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -25,6 +27,10 @@ class ODataUsersTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    // Mocka Kafka — nei test non si invia nulla a Kafka reale
+    @MockBean
+    private KafkaProducerService kafkaProducerService;
 
     @BeforeEach
     void setUp() {

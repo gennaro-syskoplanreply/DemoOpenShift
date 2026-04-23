@@ -1,7 +1,7 @@
 kind: Deployment
 apiVersion: apps/v1
 metadata:
-  name: my-java-springboot
+  name: demoapp
 spec:
   replicas: 1
   selector:
@@ -13,13 +13,15 @@ spec:
         app: java-springboot-app
     spec:
       containers:
-        - name: my-java-springboot
-          image: image-registry.openshift-image-registry.svc:5000/gennaro-syskoplan-dev/hello-world:latest
+        - name: demoapp
+          image: image-registry.openshift-image-registry.svc:5000/gennaro-syskoplan-dev/demoapp:latest
           ports:
             - name: http
               containerPort: 8081
               protocol: TCP
           env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgresql:5432/dbDemo"
             - name: DB_NAME
               valueFrom:
                 secretKeyRef:
@@ -35,6 +37,21 @@ spec:
                 secretKeyRef:
                   name: postgresql
                   key: database-password
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-secret
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_TOPIC
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-secret
+                  key: KAFKA_TOPIC
+            - name: KAFKA_GROUP_ID
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-secret
+                  key: KAFKA_GROUP_ID
           resources:
             requests:
               memory: "180Mi"
@@ -43,7 +60,7 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: my-java-springboot-svc
+  name: demoapp-svc
 spec:
   ports:
     - name: http-8081
@@ -52,3 +69,17 @@ spec:
       targetPort: 8081
   selector:
     app: java-springboot-app
+
+---
+kind: Route
+apiVersion: route.openshift.io/v1
+metadata:
+  name: demoapp-route
+spec:
+  to:
+    kind: Service
+    name: demoapp-svc
+  port:
+    targetPort: http-8081
+  tls:
+    termination: edge

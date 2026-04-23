@@ -6,12 +6,41 @@ import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriResourcePrimitiveProperty;
 import org.apache.olingo.server.api.uri.queryoption.expression.*;
+import org.apache.olingo.server.api.uri.queryoption.expression.Member;
+import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.function.Function;
 
+/**
+ * GenericExpressionVisitor — Interprete dei filtri OData ($filter)
+ *
+ * Questa classe implementa il pattern "Visitor" per visitare e valutare
+ * l'albero delle espressioni generato da Apache Olingo quando un client
+ * invia una richiesta OData con un parametro $filter.
+ *
+ * Esempio di utilizzo:
+ *   GET /odata/Users?$filter=name eq 'Mario' and age gt 18
+ *
+ * Olingo analizza il filtro e costruisce un albero di espressioni.
+ * Questa classe visita ogni nodo dell'albero e lo valuta restituendo
+ * un valore booleano che indica se l'entità corrente soddisfa il filtro.
+ *
+ * Operatori supportati:
+ *   - Confronto:  eq, ne, gt, lt, ge, le
+ *   - Logici:     and, or
+ *   - Metodi:     startswith, endswith, contains, tolower, toupper, trim, length
+ *
+ * Come si usa nel codice:
+ *   1. Creare un'istanza di GenericExpressionVisitor
+ *   2. Impostare il propertyAccessor per l'entità corrente
+ *   3. Chiamare filterExpression.accept(visitor) per valutare il filtro
+ *
+ * @see ExpressionVisitor
+ * @see GenericEntityProcessor
+ */
 public class GenericExpressionVisitor implements ExpressionVisitor<Object> {
 
     private Function<String, Object> propertyAccessor;

@@ -8,6 +8,37 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+/**
+ * GenericEdmProvider — Fornitore del modello EDM (Entity Data Model) OData
+ *
+ * Questa classe definisce la struttura del servizio OData, ovvero lo "schema"
+ * che descrive quali entità sono disponibili, le loro proprietà e le loro chiavi.
+ * È l'equivalente OData di un file di configurazione del database.
+ *
+ * Viene letta automaticamente da Apache Olingo all'avvio del servizio per
+ * costruire il metadata document, accessibile tramite:
+ *   GET /odata/$metadata
+ *
+ * Il provider è "generico" perché non è legato a nessuna entità specifica:
+ * legge dinamicamente tutte le entità registrate in ODataEntityRegistry
+ * ed espone il loro schema OData in modo automatico.
+ *
+ * Flusso di registrazione di una nuova entità:
+ *   1. Creare un ODataEntityDescriptor<T> per l'entità T
+ *   2. Registrarlo in ODataEntityRegistry
+ *   3. GenericEdmProvider lo esporrà automaticamente nel metadata
+ *
+ * Esempio di metadata generato:
+ *   <EntityType Name="User">
+ *     <Key><PropertyRef Name="id"/></Key>
+ *     <Property Name="id" Type="Edm.Int64"/>
+ *     <Property Name="name" Type="Edm.String"/>
+ *   </EntityType>
+ *
+ * @see ODataEntityRegistry
+ * @see ODataEntityDescriptor
+ * @see CsdlAbstractEdmProvider
+ */
 public class GenericEdmProvider extends CsdlAbstractEdmProvider {
 
     public static final String NAMESPACE = "com.example.demo";
