@@ -25,20 +25,7 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -B -DskipTests
 
-      - name: Login al registry OpenShift
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.OPENSHIFT_REGISTRY }}
-          username: ${{ secrets.OPENSHIFT_USER }}
-          password: ${{ secrets.OPENSHIFT_TOKEN }}
-
-      - name: Build e Push Docker image
-        run: |
-          IMAGE=${{ secrets.OPENSHIFT_REGISTRY }}/${{ secrets.OPENSHIFT_NAMESPACE }}/hello-world:latest
-          docker build -f Dockerfile -t $IMAGE .
-          docker push $IMAGE
-
-      - name: Deploy su OpenShift
+      - name: Login su OpenShift
         uses: redhat-actions/oc-login@v1
         with:
           openshift_server_url: ${{ secrets.OPENSHIFT_SERVER }}
@@ -46,11 +33,11 @@ jobs:
           insecure_skip_tls_verify: true
           namespace: ${{ secrets.OPENSHIFT_NAMESPACE }}
 
-      - name: Apply manifests
+      - name: Build su OpenShift
         run: |
-          oc apply -f deploy.yaml -n ${{ secrets.OPENSHIFT_NAMESPACE }}
+          oc start-build demoapp --from-file=target/demo-0.0.1-SNAPSHOT.jar --follow --wait
 
-      - name: Trigger rollout
+      - name: Deploy su OpenShift
         run: |
-          oc rollout restart deployment/my-java-springboot -n ${{ secrets.OPENSHIFT_NAMESPACE }}
-          oc rollout status deployment/my-java-springboot -n ${{ secrets.OPENSHIFT_NAMESPACE }}
+          oc rollout restart deployment/demoapp -n ${{ secrets.OPENSHIFT_NAMESPACE }}
+          oc rollout status deployment/demoapp -n ${{ secrets.OPENSHIFT_NAMESPACE }}
