@@ -25,6 +25,11 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -B -DskipTests
 
+      - name: Install oc CLI
+        uses: redhat-actions/openshift-tools-installer@v1
+        with:
+          oc: latest
+
       - name: Login su OpenShift
         uses: redhat-actions/oc-login@v1
         with:
