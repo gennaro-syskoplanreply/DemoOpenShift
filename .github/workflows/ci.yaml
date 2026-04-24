@@ -40,7 +40,7 @@ jobs:
 
       - name: Build su OpenShift
         run: |
-          oc start-build demoapp --from-file=target/demo-0.0.1-SNAPSHOT.jar --follow --wait
+          oc start-build demoapp --from-file=target/app.jar --follow --wait
 
       - name: Deploy su OpenShift
         run: |
