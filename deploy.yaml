@@ -52,6 +52,11 @@ spec:
                 secretKeyRef:
                   name: kafka-secret
                   key: KAFKA_GROUP_ID
+            - name: USER_TOPIC
+              valueFrom:
+                secretKeyRef:
+                  name: kafka-secret
+                  key: USER_TOPIC
           resources:
             requests:
               memory: "180Mi"

@@ -23,10 +23,12 @@ public class KafkaProducerService {
     /**
      * Invia un messaggio al topic Kafka configurato.
      *
+     * @param topic il topic a cui inviare il messaggio
+     * @param key la chiave del messaggio
      * @param message il messaggio da inviare
      */
-    public void sendMessage(String message) {
-        kafkaTemplate.send(topic, message)
+    public void sendMessage(String topic, String key, String message) {
+        kafkaTemplate.send(topic, key, message)
             .addCallback(
                 result  -> System.out.println("Messaggio inviato al topic '" + topic + "': " + message),
                 failure -> System.err.println("Errore invio messaggio: " + failure.getMessage())

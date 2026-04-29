@@ -3,16 +3,18 @@ package com.example.demo.service;
 import com.example.demo.dto.UserRequest;
 import com.example.demo.model.User;
 import com.example.demo.repository.UserRepository;
-
 import com.example.demo.kafka.KafkaProducerService;
-
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 public class UserService {
+
+    @Value("${KAFKA_TOPIC}")
+    private String userTopic;
 
     private final UserRepository userRepository;
     private final KafkaProducerService kafkaProducerService;
@@ -32,7 +34,9 @@ public class UserService {
 
         // Invia messaggio Kafka dopo il salvataggio
         kafkaProducerService.sendMessage(
-            "Ok va tutto bene - Utente creato: " + savedUser.getName() + " " + savedUser.getSurname()
+                userTopic,
+                savedUser.getId().toString(),
+                "Utente creato: " + savedUser.getName() + " " + savedUser.getSurname()
         );
 
         return savedUser;
