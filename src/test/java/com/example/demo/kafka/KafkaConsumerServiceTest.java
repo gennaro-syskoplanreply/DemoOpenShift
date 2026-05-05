@@ -15,14 +15,15 @@ import static org.mockito.Mockito.verify;
 
 @SpringBootTest
 @EmbeddedKafka(
-    partitions = 1,
+    partitions = 3,
     topics = {"test-topic"},
     bootstrapServersProperty = "spring.kafka.bootstrap-servers"
 )
 @TestPropertySource(properties = {
     "spring.autoconfigure.exclude=",
     "KAFKA_TOPIC=test-topic",
-    "KAFKA_GROUP_ID=test-group"
+    "KAFKA_GROUP_ID=test-group",
+    "spring.kafka.consumer.auto-offset-reset=earliest"
 })
 @DirtiesContext
 class KafkaConsumerServiceTest {

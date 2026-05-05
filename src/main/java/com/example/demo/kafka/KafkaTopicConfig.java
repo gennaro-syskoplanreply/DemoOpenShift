@@ -39,6 +39,7 @@ public class KafkaTopicConfig {
         return TopicBuilder.name(topicName + ".DLT")
                 .partitions(3)
                 .replicas(1)
+                .config("retention.ms", "2592000000") // 30 giorni
                 .build();
     }
 }
